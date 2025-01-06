@@ -9,7 +9,7 @@ To run The Demodifier, save the script and your input csv in the same directory,
 
 Python3 De-modifier.py your_input_file.csv
 
-Please refer to Evans et al. (2024) for further information.
+Please refer to Evans et al. (2025) for further information.
 
 If you use this tool, please cite:
 
