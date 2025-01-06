@@ -1,9 +1,9 @@
 # Demodifier
 The Demodifier generates potential modification-induced alternate peptide sequences and their lowest common taxonomic ancestor given a csv containing a list of peptide sequences and their post translational modifications, to avoid spurious taxonomic detections in ancient protein studies.
 
-The Demodifier is a python script which screens for possible modification-induced sequence permutations (currently supporting deamidation of N and Q and pyroglutamic acid formation at N-terminus E and Q), and calls the Unipept pept2lca API (Mesuere et al. 2016) to assign each peptide permutation its lowest common ancestor, allowing the researcher to scrutinise possibly inaccurate peptide taxonomies in ancient protein studies.
+The Demodifier is a python script which screens for possible modification-induced sequence permutations (currently supporting deamidation of N and Q and pyroglutamic acid formation at N-terminus E and Q). It calls the Unipept pept2lca API (Mesuere et al. 2016) to assign each peptide permutation its lowest common ancestor. This allows the researcher to scrutinise possibly inaccurate peptide taxonomies in ancient protein studies.
 
-Given a csv containing a list of peptide sequences in one column, and their accompanying modifications in Mascot or Maxquant format in another, The Demodifier will simulate all possible modification induced sequence permutations, and call the Unipept pept2lca api to assign taxonomy to each. This enables the researcher to scrutinise all possible LCAs for a given peptide, avoiding spurious taxonomic detections caused by modifications.
+Given a csv containing a list of peptide sequences in one column, and their accompanying modifications in Mascot or Maxquant format in another, the Demodifier will simulate all possible modification induced sequence permutations. It calls the Unipept pept2lca api to assign taxonomy to each. 
 
 To run The Demodifier, save the script and your input csv in the same directory, and then run the script using command:
 
