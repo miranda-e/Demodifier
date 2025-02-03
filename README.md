@@ -13,6 +13,6 @@ Please refer to Evans et al. (2025) for further information.
 
 If you use this tool, please cite:
 
-Evans (2025): The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics (preprint)
+Evans (2025): The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics (preprint) https://www.biorxiv.org/content/10.1101/2025.01.09.632126v2
 
 Bart Mesuere, Toon Willems, Felix Van der Jeugt, Bart Devreese, Peter Vandamme, Peter Dawyndt, Unipept web services for metaproteomics analysis, Bioinformatics, Volume 32, Issue 11, June 2016, Pages 1746–1748, https://doi.org/10.1093/bioinformatics/btw039
