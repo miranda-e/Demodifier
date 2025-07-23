@@ -1,3 +1,14 @@
+#The Demodifier, Miranda Evans 2025
+#  ---------------------------------------------------------
+# The Demodifier generates peptide sequences and simulatulates potential sequence modifications (caused by deamidation,reamidation,pyroglu)
+# to generate all possible Modificaitn Induced Sequence Permutaitons (MISPs).
+# The script then sends each MISP to the Unipept API to retrieve its lowest Common Ancestor (LCA).
+# Finally, it outputs a results CSV, containing all MISPs and their LCAs,
+# enabling the researcher to assess potentially incorrect peptide taxonomies.
+# if you use this tool, please cite Evans (2025), 
+# The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics
+# ---------------------------------------------------------
+
 import argparse
 import csv
 import json
@@ -11,9 +22,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# ---------------------------------------------
-# Logging Configuration
-# ---------------------------------------------
+# Configure logging to show status info
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
@@ -21,9 +31,10 @@ formatter = logging.Formatter("[%(levelname)s] %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# ---------------------------------------------
-# Shared Session for HTTP Requests
-# ---------------------------------------------
+
+# Setup a resilient web session (used for API calls)
+# Handles retries on failure and avoids re-opening connections
+
 session = requests.Session()
 retries = Retry(
     total=3,
@@ -33,9 +44,10 @@ retries = Retry(
 )
 session.mount("https://", HTTPAdapter(max_retries=retries))
 
-# ---------------------------------------------
-# API Call with Retry Logic
-# ---------------------------------------------
+
+# Query the Unipept API with a list of peptide strings
+# Returns their LCA
+
 def process_peptides(peptides, session=session):
     url = "https://api.unipept.ugent.be/api/v1/pept2lca"
     params = {"input[]": peptides, "equate_il": "true"}
@@ -49,14 +61,18 @@ def process_peptides(peptides, session=session):
         logger.error(f"API request failed: {e}")
         return ["no response"] * len(peptides)
 
-# ---------------------------------------------
-# Deamidation Utilities
-# ---------------------------------------------
+# Counts how many deamidation events are listed in the Modifications column
+# Example: "2 Deamidated (NQ)" → returns 2
+
 def extract_deamidation_count(modifications):
     if not modifications:
         return 0
     matches = re.findall(r'(?:(\d+)\s*)?(Deamidated|Deamidation)\s*\(NQ\)', modifications, re.IGNORECASE)
     return sum(int(num) if num else 1 for num, _ in matches)
+
+
+# Count how many residues in the sequence can be deamidated (i.e. number of N or Q in peptide)
+# Accounts for pyro-Glu shortening the sequence (i.e. ignore N-term Q or E if pyroGlu mod detected)
 
 def count_deamidatable_residues(peptide, modifications):
     if not peptide:
@@ -64,6 +80,9 @@ def count_deamidatable_residues(peptide, modifications):
     pyro_glu = "pyro" in modifications.lower() if modifications else False
     sequence = peptide[1:] if pyro_glu and peptide[0] in {"Q", "E"} else peptide
     return sum(1 for aa in sequence if aa in {"N", "Q"})
+
+# Decide if we need to care about exact deamidation position
+# (only required if multiple variants give different LCAs)
 
 def deamidation_position_required(modifications, peptide, identical_lcas):
     if not peptide:
@@ -74,9 +93,10 @@ def deamidation_position_required(modifications, peptide, identical_lcas):
     nq_total = count_deamidatable_residues(peptide, modifications)
     return "required" if num_deamid < nq_total else "not required"
 
-# ---------------------------------------------
-# Permutation Functions
-# ---------------------------------------------
+
+# Generate all possible deamidation-based permutations of the peptide
+# where up to `max_substitutions` N→D and Q→E changes are made
+
 def generate_peptide_permutations(peptide, max_substitutions):
     n_indices = [i for i, letter in enumerate(peptide) if letter == "N"]
     q_indices = [i for i, letter in enumerate(peptide) if letter == "Q"]
@@ -96,6 +116,9 @@ def generate_peptide_permutations(peptide, max_substitutions):
                     permutations.append(("".join(temp_peptide), len(modified_positions), modified_positions))
     return permutations
 
+# Generate all reamidated-based permutations by reverting D→N and E→Q,
+# except at positions previously substituted
+
 def generate_reamidation_permutations(peptide, modified_positions):
     d_indices = [i for i, letter in enumerate(peptide) if letter == "D" and i not in modified_positions]
     e_indices = [i for i, letter in enumerate(peptide) if letter == "E" and i not in modified_positions]
@@ -114,6 +137,9 @@ def generate_reamidation_permutations(peptide, modified_positions):
                     permutations.append("".join(temp_peptide))
     return permutations
 
+# generatue pyro-glu based permutations, if pyro-Glu conversions are specified in Modifications column
+# I.e. Q→E or E→Q at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search
+
 def add_pyro_glu_permutations(peptide_permutations, modifications):
     pyro_permutations = set(peptide_permutations)
     original_peptide = peptide_permutations[0]
@@ -126,9 +152,7 @@ def add_pyro_glu_permutations(peptide_permutations, modifications):
         pyro_permutations.update(modified_peptides)
     return list(pyro_permutations)
 
-# ---------------------------------------------
-# Safe Chunked LCA Lookup
-# ---------------------------------------------
+#look up LCAs for a list of peptide variants in chunks of 100
 def get_lcas_for_permutations(permutations, session):
     chunk_size = 100
     lca_map = {}
@@ -139,9 +163,8 @@ def get_lcas_for_permutations(permutations, session):
             lca_map[pep] = lca
     return [lca_map.get(p, "no match") for p in permutations]
 
-# ---------------------------------------------
-# Row Processor
-# ---------------------------------------------
+# Process one row (peptide + modifications) and return all variants + LCA data
+
 def process_row(row, session):
     peptide = (row.get('Sequence') or row.get('pep_seq') or '').strip()
     modifications = (row.get('Modifications') or row.get('pep_var_mod') or '').strip()
@@ -157,9 +180,9 @@ def process_row(row, session):
     row_lcas = get_lcas_for_permutations(final_permutations, session)
     return row, final_permutations, row_lcas, input_pep_lca
 
-# ---------------------------------------------
-# Main Program Execution
-# ---------------------------------------------
+# Main script execution
+# Loads input CSV, processes rows, writes outputs
+
 def main(input_csv, num_threads, verbose=False):
     if verbose:
         logger.setLevel(logging.DEBUG)
@@ -247,9 +270,8 @@ def main(input_csv, num_threads, verbose=False):
     elapsed = time.time() - start_time
     logger.info(f"Script completed in {elapsed:.2f} seconds using {num_threads} threads.")
 
-# ---------------------------------------------
-# CLI
-# ---------------------------------------------
+# Command-line interface: handles argument parsing
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process peptides from a CSV file.")
     parser.add_argument("input_csv", help="Input CSV file containing peptide sequences")
