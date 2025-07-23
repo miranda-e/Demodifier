@@ -7,7 +7,7 @@ Given a csv containing a list of peptide sequences in one column, and their acco
 
 To run The Demodifier, save the script and your input csv in the same directory, and then run the script using command:
 
-Python3 De-modifier.py your_input_file.csv
+Python3 Demodifier.py your_input_file.csv
 
 Please refer to Evans et al. (2025) for further information.
 
