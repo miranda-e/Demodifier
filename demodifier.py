@@ -119,11 +119,24 @@ def generate_peptide_permutations(peptide, max_substitutions):
 # Generate all reamidated-based permutations by reverting D→N and E→Q,
 # except at positions previously substituted
 
-def generate_reamidation_permutations(peptide, modified_positions):
-    d_indices = [i for i, letter in enumerate(peptide) if letter == "D" and i not in modified_positions]
-    e_indices = [i for i, letter in enumerate(peptide) if letter == "E" and i not in modified_positions]
+def generate_reamidation_permutations(peptide, modified_positions, modifications=None):
+    pyro_glu = "pyro" in modifications.lower() if modifications else False
+
+    d_indices = [
+        i for i, letter in enumerate(peptide)
+        if letter == "D" and i not in modified_positions
+    ]
+
+    e_indices = [
+        i for i, letter in enumerate(peptide)
+        if letter == "E"
+        and i not in modified_positions
+        and not (i == 0 and pyro_glu)  # Skip N-terminal E if pyro-Glu is detected
+    ]
+
     if not d_indices and not e_indices:
         return [peptide]
+
     permutations = []
     for num_d in range(len(d_indices) + 1):
         for num_e in range(len(e_indices) + 1):
@@ -136,6 +149,7 @@ def generate_reamidation_permutations(peptide, modified_positions):
                         temp_peptide[index] = "Q"
                     permutations.append("".join(temp_peptide))
     return permutations
+
 
 # generatue pyro-glu based permutations, if pyro-Glu conversions are specified in Modifications column
 # I.e. Q→E or E→Q at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search
@@ -174,7 +188,7 @@ def process_row(row, session):
     peptide_options = generate_peptide_permutations(peptide, max_substitutions)
     final_permutations = []
     for perm, _, modified_positions in peptide_options:
-        final_permutations.extend(generate_reamidation_permutations(perm, modified_positions))
+        final_permutations.extend(generate_reamidation_permutations(perm, modified_positions, modifications))
     final_permutations = list(set(add_pyro_glu_permutations(final_permutations, modifications)))
     input_pep_lca = process_peptides([peptide], session=session)[0]
     row_lcas = get_lcas_for_permutations(final_permutations, session)
