@@ -161,11 +161,13 @@ def process_row(row):
 # ---------------------------------------------
 # LCA Batch Processing
 # ---------------------------------------------
-def process_lca_in_batches(peptide_batches):
-    batch_results = []
-    for batch in peptide_batches:
-        batch_results.extend(process_peptides(batch))
-    return batch_results
+def process_lca_in_batches(peptide_batches, max_workers=4):
+    results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(process_peptides, batch) for batch in peptide_batches]
+        for f in as_completed(futures):
+            results.extend(f.result())
+    return results
 
 # ---------------------------------------------
 # Main Program Execution
@@ -213,7 +215,7 @@ def main(input_csv, num_threads, verbose=False):
 
             batch_size = 100
             peptide_batches = [peptide_to_lca[i:i + batch_size] for i in range(0, len(peptide_to_lca), batch_size)]
-            lca_results = process_lca_in_batches(peptide_batches)
+            lca_results = process_lca_in_batches(peptide_batches, max_workers=num_threads)
 
             lca_index = 0
             for row, final_permutations, input_pep_lca in rows_to_process:
