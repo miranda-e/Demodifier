@@ -22,22 +22,23 @@ handler = logging.StreamHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-
+# ---------------------------------------------
+# Shared Session for HTTP Requests
+# ---------------------------------------------
+session = requests.Session()
+retries = Retry(
+    total=3,
+    backoff_factor=0.5,
+    status_forcelist=[429, 500, 502, 503, 504],
+    raise_on_status=False
+)
+session.mount("https://", HTTPAdapter(max_retries=retries))
 # ---------------------------------------------
 # API Call with Retry Logic
 # ---------------------------------------------
-def process_peptides(peptides, max_retries=3, backoff_factor=0.5):
+def process_peptides(peptides, session=session):
     url = "https://api.unipept.ugent.be/api/v1/pept2lca"
     params = {"input[]": peptides, "equate_il": "true"}
-
-    session = requests.Session()
-    retries = Retry(
-        total=max_retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=[429, 500, 502, 503, 504],
-        raise_on_status=False
-    )
-    session.mount("https://", HTTPAdapter(max_retries=retries))
 
     try:
         response = session.get(url, params=params, timeout=10)
@@ -225,14 +226,13 @@ def main(input_csv, num_threads, verbose=False):
                 permutations_with_lcas = []
                 permutation_json = []
 
-                for variant in final_permutations:
-                    lca = lca_results[lca_index]
-                    lca_index += 1
+                row_lcas = process_peptides(final_permutations)
+                for variant, lca in zip(final_permutations, row_lcas):
                     variant_lca_writer.writerow([sequence_col, modifications_col, variant, lca])
                     permutation_json.append({"variant": variant, "lca": lca})
                     if lca != "no match":
                         lca_options.append(lca)
-                        permutations_with_lcas.append(variant)
+                    permutations_with_lcas.append(variant)
 
                 identical_lcas = "NA" if len(lca_options) <= 1 else ("yes" if len(set(lca_options)) == 1 else "no")
                 deamid_check = deamidation_position_required(modifications_col, sequence_col, identical_lcas)
