@@ -3,6 +3,8 @@
 
 **The Demodifier** is a tool for processing peptide sequences to detect **Modification-Induced Sequence Permutations (MISPs)** caused by deamidation and N-terminal pyroglutamic acid (pyro-Glu) formation (Evans 2025). It automates the detection of peptides that may potentially be derived from multiple distinct taxonomies by generating all possible MISPs and retrieving their **Lowest Common Ancestor (LCA)** via the **Unipept API**. 
 
+![Demodifier Figure](images/demodifier_simple_fig.png)
+
 ## What It Does
 
 **The Demodifier** performs the following tasks:
