@@ -96,7 +96,7 @@ To quickly try out **The Demodifier**, you can use the provided `example.csv` fi
 
 3. **Run the script with the `example.csv` file**:
    ```bash
-   python demodifier.py example.csv --num-processors 4
+   python3 demodifier.py example.csv --num-processors 4
    ```
 
    This will process the peptides in `example.csv` and output the following files:
