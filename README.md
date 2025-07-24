@@ -70,7 +70,7 @@ The Demodifier produces the following files:
 To run the script:
 
 ```bash
-python demodifier.py input_peptides.csv --num-processors 4
+python3 demodifier.py input_peptides.csv --num-processors 4
 ```
 
 - **`input_peptides.csv`**: The input CSV file containing peptide sequences and modifications.
