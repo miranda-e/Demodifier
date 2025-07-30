@@ -95,7 +95,7 @@ def deamidation_position_required(modifications, peptide, identical_lcas):
 
 # Generate all possible deamidation-based permutations of the peptide
 # where up to `max_substitutions` N→D and Q→E changes are made
-def generate_peptide_permutations(peptide, max_substitutions):
+def generate_deamidation_permutations(peptide, max_substitutions):
     n_indices = [i for i, letter in enumerate(peptide) if letter == "N"]
     q_indices = [i for i, letter in enumerate(peptide) if letter == "Q"]
     if not n_indices and not q_indices:
@@ -153,7 +153,7 @@ def generate_reamidation_permutations(peptide, modified_positions, modifications
     return permutations
 
 # Generate pyro-glu based permutations, if pyro-Glu conversions are specified in Modifications column
-# I.e. Q→E or E→Q at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search
+# I.e. if Q or E at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search, then simulate Q→E or E→Q respectively
 def add_pyro_glu_permutations(peptide_permutations, modifications):
     pyro_permutations = set(peptide_permutations)
     original_peptide = peptide_permutations[0]
@@ -193,7 +193,7 @@ def process_row(row, session):
     # Debug: Log deamidation count
     logger.debug(f"Deamidation count for {peptide}: {max_substitutions}")
     
-    peptide_options = generate_peptide_permutations(peptide, max_substitutions)
+    peptide_options = generate_deamidation_permutations(peptide, max_substitutions)
     
     # Debug: Log number of permutations generated
     logger.debug(f"Generated total {len(peptide_options)} MISPs for {peptide}")
@@ -243,7 +243,7 @@ def main(input_csv, num_threads, verbose=False):
 
         fieldnames = [
             'Sequence', 'Modifications', 'input_pep_LCA', 'total_unique_permutations_(count)',
-            'all_permutations_with_LCAs_(Count)', 'permutations_yeilding_LCAs',
+            'all_permutations_with_LCAs_(count)', 'permutations_yielding_LCAs',
             'all_permutation_LCAs', 'identical_LCAs', 'deamidation_position_checking'
         ]
 
@@ -287,8 +287,8 @@ def main(input_csv, num_threads, verbose=False):
                         'Modifications': modifications_col,
                         'input_pep_LCA': input_pep_lca,
                         'total_unique_permutations_(count)': len(final_permutations),
-                        'all_permutations_with_LCAs_(Count)': len(permutations_with_lcas),
-                        'permutations_yeilding_LCAs': ";".join(permutations_with_lcas),
+                        'all_permutations_with_LCAs_(count)': len(permutations_with_lcas),
+                        'permutations_yielding_LCAs': ";".join(permutations_with_lcas),
                         'all_permutation_LCAs': ";".join(lca_options),
                         'identical_LCAs': identical_lcas,
                         'deamidation_position_checking': deamid_check
