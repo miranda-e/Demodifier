@@ -1,6 +1,6 @@
 # The Demodifier, Miranda Evans 2025
 # ---------------------------------------------------------
-# The Demodifier generates peptide sequences and simulatulates potential sequence modifications (caused by deamidation, reamidation, pyroglu)
+# The Demodifier generates peptide sequences and simulates potential sequence modifications (caused by deamidation, reamidation, pyroglu)
 # to generate all possible Modification Induced Sequence Permutations (MISPs).
 # The script then sends each MISP to the Unipept API to retrieve its lowest Common Ancestor (LCA).
 # Finally, it outputs a results CSV, containing all MISPs and their LCAs,
@@ -24,7 +24,7 @@ from urllib3.util.retry import Retry
 
 # Configure logging to show status info
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)  # Default level set to DEBUG for verbose mode
 handler = logging.StreamHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
 handler.setFormatter(formatter)
@@ -41,8 +41,8 @@ retries = Retry(
 )
 session.mount("https://", HTTPAdapter(max_retries=retries))
 
-# Query the Unipept API with a list of peptide strings
-# Returns their LCA
+# Query the Unipept API with a list of peptides
+# Returns their LCAs
 def process_peptides(peptides, session=session):
     url = "https://api.unipept.ugent.be/api/v1/pept2lca"
     params = {"input[]": peptides, "equate_il": "true"}
@@ -74,7 +74,7 @@ def extract_deamidation_count(modifications):
     return sum(int(num) if num else 1 for num, _ in matches)
 
 # Count how many residues in the sequence can be deamidated (i.e. number of N or Q in peptide)
-# Accounts for pyro-Glu shortening the sequence (i.e. ignore N-term Q or E if pyroGlu mod detected)
+# Accounts for pyro-Glu shortening the sequence (i.e. ignore N-term Q or E if pyro-Glu mod was detected)
 def count_deamidatable_residues(peptide, modifications):
     if not peptide:
         return 0
@@ -83,7 +83,7 @@ def count_deamidatable_residues(peptide, modifications):
     return sum(1 for aa in sequence if aa in {"N", "Q"})
 
 # Decide if we need to care about exact deamidation position
-# (only required if multiple variants give different LCAs)
+# (only required if multiple MISPs give different LCAs)
 def deamidation_position_required(modifications, peptide, identical_lcas):
     if not peptide:
         return "not required"
@@ -94,44 +94,78 @@ def deamidation_position_required(modifications, peptide, identical_lcas):
     return "required" if num_deamid < nq_total else "not required"
 
 # Generate all possible deamidation-based permutations of the peptide
-# where up to `max_substitutions` N→D and Q→E changes are made
-def generate_deamidation_permutations(peptide, max_substitutions):
-    n_indices = [i for i, letter in enumerate(peptide) if letter == "N"]
-    q_indices = [i for i, letter in enumerate(peptide) if letter == "Q"]
+# in which up to the maximum number of deamidations detected are made (substitute N→D and Q→E)
+# Ignores N-terminal Q or E if pyro-glu modification is detected (by inserting a placeholder amino acid, "X")
+def generate_deamidation_permutations(peptide, max_substitutions, modifications, verbose=False):
+    # Ensure modifications is a string, even if it's passed as a boolean
+    modifications = str(modifications) if modifications else ""
+    
+    # Check for pyro-Glu modification
+    pyro_glu = "pyro" in modifications.lower() if modifications else False
+    
+    # Pretend that the first residue (Q or E) is a placeholder amino acid 'X'for substitution to prevent inaccurate n-term subs (doesn't change actual peptide)
+    peptide_for_permutation = peptide
+    if pyro_glu and peptide[0] in {"Q", "E"}:
+        peptide_for_permutation = "X" + peptide[1:]
+
+    # Find all N and Q indices in the (modified X containing) peptide
+    n_indices = [i for i, letter in enumerate(peptide_for_permutation) if letter == "N"]
+    q_indices = [i for i, letter in enumerate(peptide_for_permutation) if letter == "Q"]
+    
     if not n_indices and not q_indices:
-        return [(peptide, 0, [])]
+        return [(peptide, 0, [])]  # No permutations if no N or Q in peptide
+    
     permutations = []
+    
+    # Generate deamidation-based permutations (N -> D and Q -> E)
     for num_n in range(min(max_substitutions, len(n_indices)) + 1):
         for num_q in range(min(max_substitutions - num_n, len(q_indices)) + 1):
             for combo_n in combinations(n_indices, num_n):
                 for combo_q in combinations(q_indices, num_q):
-                    temp_peptide = list(peptide)
+                    temp_peptide = list(peptide)  
+                    
+                    # Modify the positions with N -> D and Q -> E (on the full non-X-containing peptide)
                     modified_positions = list(combo_n) + list(combo_q)
                     for index in combo_n:
-                        temp_peptide[index] = "D"
+                        temp_peptide[index] = "D"  # Substitute N -> D
                     for index in combo_q:
-                        temp_peptide[index] = "E"
+                        temp_peptide[index] = "E"  # Substitute Q -> E
+                    
+                    # Store the permutation and the positions modified
                     permutations.append(("".join(temp_peptide), len(modified_positions), modified_positions))
     
-    # Debug: Log number of permutations generated
+    # Print all permutations if verbose flag is set
+    if verbose:
+        print(f"Deamidation permutations for peptide {peptide}:")
+        for perm in permutations:
+            print(perm[0])
+
     logger.debug(f"Generated {len(permutations)} deamidation-induced permutations.")
     return permutations
 
-# Generate all reamidated-based permutations by reverting D→N and E→Q,
+# Generate all reamidated-based permutations by substituting D→N and E→Q,
 # except at positions previously substituted
-def generate_reamidation_permutations(peptide, modified_positions, modifications=None):
+# Ignores N-terminal Q or E if pyro-glu modification is detected (by inserting a placeholder amino acid, "X")
+def generate_reamidation_permutations(peptide, modified_positions, modifications=None, verbose=False):
+    modifications = str(modifications) if modifications else ""
+
+    # Check for pyro-Glu modification
     pyro_glu = "pyro" in modifications.lower() if modifications else False
 
+    # If pyro-Glu modification is present, treat the first residue (Q or E) as a placeholder ('X') for permutation making (doesn't alter actual peptide)
+    peptide_for_permutation = peptide
+    if pyro_glu and peptide[0] in {"Q", "E"}:
+        peptide_for_permutation = "X" + peptide[1:]
+
+    # Find all D and E indices in the (modified X containing) peptide
     d_indices = [
-        i for i, letter in enumerate(peptide)
+        i for i, letter in enumerate(peptide_for_permutation)
         if letter == "D" and i not in modified_positions
     ]
 
     e_indices = [
-        i for i, letter in enumerate(peptide)
-        if letter == "E"
-        and i not in modified_positions
-        and not (i == 0 and pyro_glu)  # Skip N-terminal E if pyro-Glu is detected
+        i for i, letter in enumerate(peptide_for_permutation)
+        if letter == "E" and i not in modified_positions
     ]
 
     if not d_indices and not e_indices:
@@ -142,13 +176,18 @@ def generate_reamidation_permutations(peptide, modified_positions, modifications
         for num_e in range(len(e_indices) + 1):
             for combo_d in combinations(d_indices, num_d):
                 for combo_e in combinations(e_indices, num_e):
-                    temp_peptide = list(peptide)
+                    temp_peptide = list(peptide)  # working with full (non "X"-containing) peptide
                     for index in combo_d:
-                        temp_peptide[index] = "N"
+                        temp_peptide[index] = "N"  # Substitute D -> N
                     for index in combo_e:
-                        temp_peptide[index] = "Q"
+                        temp_peptide[index] = "Q"  # Substitute E -> Q
                     permutations.append("".join(temp_peptide))
 
+    # Print permutations if verbose flag is set
+    if verbose:
+        print(f"Reamidation permutations for peptide {peptide}:")
+        for perm in permutations:
+            print(perm)
 
     return permutations
 
@@ -166,7 +205,7 @@ def add_pyro_glu_permutations(peptide_permutations, modifications):
         pyro_permutations.update(modified_peptides)
     return list(pyro_permutations)
 
-# Look up LCAs for a list of peptide variants in chunks of 100
+# Look up LCAs for a list of peptide variants in chunks of 100 (Unipept's recommended max)
 def get_lcas_for_permutations(permutations, session):
     chunk_size = 100
     lca_map = {}
@@ -193,10 +232,8 @@ def process_row(row, session):
     # Debug: Log deamidation count
     logger.debug(f"Deamidation count for {peptide}: {max_substitutions}")
     
-    peptide_options = generate_deamidation_permutations(peptide, max_substitutions)
+    peptide_options = generate_deamidation_permutations(peptide, max_substitutions, modifications)
     
-    # Debug: Log number of permutations generated
-    logger.debug(f"Generated total {len(peptide_options)} MISPs for {peptide}")
     
     final_permutations = []
     for perm, _, modified_positions in peptide_options:
@@ -224,7 +261,9 @@ def process_row(row, session):
 def main(input_csv, num_threads, verbose=False):
     if verbose:
         logger.setLevel(logging.DEBUG)
-    
+    else:
+        logger.setLevel(logging.INFO)
+
     start_time = time.time()
     input_name = os.path.splitext(input_csv)[0]
     output_csv = f"{input_name}_results.csv"
