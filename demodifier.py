@@ -21,6 +21,8 @@ from itertools import combinations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import tkinter as tk
+from tkinter import filedialog
 
 # Configure logging to show status info
 logger = logging.getLogger(__name__)
@@ -256,9 +258,31 @@ def process_row(row, session):
     
     return row, final_permutations, row_lcas, input_pep_lca
 
+# Function to ask the user to select a CSV file using a file dialog
+def ask_for_csv_file():
+    """
+    Opens a file dialog to let the user select a CSV file.
+    This will work for both Windows and Linux.
+    """
+    root = tk.Tk()
+    root.withdraw()  # Hide the root window
+    file_path = filedialog.askopenfilename(
+        title="Select a CSV file", 
+        filetypes=[("CSV files", "*.csv")],
+    )
+    return file_path
+
 # Main script execution
 # Loads input CSV, processes rows, writes outputs
-def main(input_csv, num_threads, verbose=False):
+def main(input_csv=None, num_threads=4, verbose=False):
+    if input_csv is None:
+        # If no CSV path is passed, open the file dialog to get the CSV file
+        input_csv = ask_for_csv_file()
+    
+    if not input_csv:
+        print("No file selected. Exiting.")
+        return
+
     if verbose:
         logger.setLevel(logging.DEBUG)
     else:
@@ -270,9 +294,8 @@ def main(input_csv, num_threads, verbose=False):
     output_json = f"{input_name}_output.json"
     output_variant_lca_csv = f"{input_name}_permutations.csv"
     
-    # Debug: Log the script start
     logger.debug(f"Starting demodifier with {num_threads} threads on {input_csv}...")
-    
+
     with open(input_csv, 'r', encoding='utf-8-sig') as csvfile, \
          open(output_variant_lca_csv, 'w', newline='') as variantlcafile:
 
@@ -301,7 +324,6 @@ def main(input_csv, num_threads, verbose=False):
                     
                     row, final_permutations, row_lcas, input_pep_lca = result
                     
-                    # Debug: Log progress on processing each row
                     logger.debug(f"Processing row: {row['Sequence']}")
 
                     sequence_col = (row.get('Sequence') or row.get('pep_seq') or '').strip()
@@ -358,7 +380,7 @@ def main(input_csv, num_threads, verbose=False):
 # Command-line interface: handles argument parsing
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process peptides from a CSV file.")
-    parser.add_argument("input_csv", help="Input CSV file containing peptide sequences")
+    parser.add_argument("input_csv", help="Input CSV file containing peptide sequences", nargs="?", default=None)
     parser.add_argument("--num-processors", type=int, default=4, help="Number of threads to use for processing")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose debug output")
     args = parser.parse_args()
