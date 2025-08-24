@@ -43,6 +43,52 @@ retries = Retry(
 )
 session.mount("https://", HTTPAdapter(max_retries=retries))
 
+# Ask the user in the terminal for settings (processors + verbose)
+# This replaces the old --num-processors and --verbose command-line arguments
+def ask_for_settings_cli(default_threads=None, default_verbose=False):
+    """
+    Ask the user in the terminal:
+      How many processors?
+      Verbose mode on?
+    Returns (num_threads:int, verbose:bool).
+    """
+
+    # Default number of processors is system CPU count or 4
+    if default_threads is None:
+        try:
+            default_threads = max(1, (os.cpu_count() or 4))
+        except Exception:
+            default_threads = 4
+
+    # Prompt for processors
+    while True:
+        try:
+            print("How many processors?")
+            raw = input().strip()
+            num_threads = int(raw)
+            if num_threads < 1:
+                raise ValueError
+            break
+        except Exception:
+            print("Please enter a whole number ≥ 1.")
+
+    # Prompt for verbose
+    while True:
+        print("Verbose mode on?")
+        raw = input().strip().lower()
+        if raw in {"y", "yes"}:
+            verbose = True
+            break
+        if raw in {"n", "no"}:
+            verbose = False
+            break
+        if raw == "":
+            verbose = default_verbose
+            break
+        print("Please answer yes or no.")
+
+    return num_threads, verbose
+
 # Query the Unipept API with a list of peptides
 # Returns their LCAs
 def process_peptides(peptides, session=session):
@@ -105,7 +151,8 @@ def generate_deamidation_permutations(peptide, max_substitutions, modifications,
     # Check for pyro-Glu modification
     pyro_glu = "pyro" in modifications.lower() if modifications else False
     
-    # Pretend that the first residue (Q or E) is a placeholder amino acid 'X'for substitution to prevent inaccurate n-term subs (doesn't change actual peptide)
+    # Pretend that the first residue (Q or E) is a placeholder amino acid 'X' for substitution 
+    # to prevent inaccurate n-term subs (doesn't change actual peptide)
     peptide_for_permutation = peptide
     if pyro_glu and peptide[0] in {"Q", "E"}:
         peptide_for_permutation = "X" + peptide[1:]
@@ -147,28 +194,22 @@ def generate_deamidation_permutations(peptide, max_substitutions, modifications,
 
 # Generate all reamidated-based permutations by substituting D→N and E→Q,
 # except at positions previously substituted
-# Ignores N-terminal Q or E if pyro-glu modification is detected (by inserting a placeholder amino acid, "X")
+# Ignores N-terminal Q or E if pyro-Glu modification is detected (by inserting a placeholder amino acid, "X")
 def generate_reamidation_permutations(peptide, modified_positions, modifications=None, verbose=False):
     modifications = str(modifications) if modifications else ""
 
     # Check for pyro-Glu modification
     pyro_glu = "pyro" in modifications.lower() if modifications else False
 
-    # If pyro-Glu modification is present, treat the first residue (Q or E) as a placeholder ('X') for permutation making (doesn't alter actual peptide)
+    # If pyro-Glu modification is present, treat the first residue (Q or E) as a placeholder ('X') for permutation making
+    # (doesn't alter actual peptide)
     peptide_for_permutation = peptide
     if pyro_glu and peptide[0] in {"Q", "E"}:
         peptide_for_permutation = "X" + peptide[1:]
 
-    # Find all D and E indices in the (modified X containing) peptide
-    d_indices = [
-        i for i, letter in enumerate(peptide_for_permutation)
-        if letter == "D" and i not in modified_positions
-    ]
-
-    e_indices = [
-        i for i, letter in enumerate(peptide_for_permutation)
-        if letter == "E" and i not in modified_positions
-    ]
+    # Find all D and E indices in the (modified X containing) peptide, excluding positions already modified
+    d_indices = [i for i, letter in enumerate(peptide_for_permutation) if letter == "D" and i not in modified_positions]
+    e_indices = [i for i, letter in enumerate(peptide_for_permutation) if letter == "E" and i not in modified_positions]
 
     if not d_indices and not e_indices:
         return [peptide]
@@ -194,7 +235,8 @@ def generate_reamidation_permutations(peptide, modified_positions, modifications
     return permutations
 
 # Generate pyro-glu based permutations, if pyro-Glu conversions are specified in Modifications column
-# I.e. if Q or E at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search, then simulate Q→E or E→Q respectively
+# I.e. if Q or E at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search, 
+# then simulate Q→E or E→Q respectively
 def add_pyro_glu_permutations(peptide_permutations, modifications):
     pyro_permutations = set(peptide_permutations)
     original_peptide = peptide_permutations[0]
@@ -236,7 +278,6 @@ def process_row(row, session):
     
     peptide_options = generate_deamidation_permutations(peptide, max_substitutions, modifications)
     
-    
     final_permutations = []
     for perm, _, modified_positions in peptide_options:
         final_permutations.extend(generate_reamidation_permutations(perm, modified_positions, modifications))
@@ -270,11 +311,15 @@ def ask_for_csv_file():
         title="Select a CSV file", 
         filetypes=[("CSV files", "*.csv")],
     )
+    try:
+        root.destroy()
+    except Exception:
+        pass
     return file_path
 
 # Main script execution
 # Loads input CSV, processes rows, writes outputs
-def main(input_csv=None, num_threads=4, verbose=False):
+def main(input_csv=None, num_threads=None, verbose=None):
     if input_csv is None:
         # If no CSV path is passed, open the file dialog to get the CSV file
         input_csv = ask_for_csv_file()
@@ -282,6 +327,12 @@ def main(input_csv=None, num_threads=4, verbose=False):
     if not input_csv:
         print("No file selected. Exiting.")
         return
+
+    # If not provided, ask in the terminal
+    if num_threads is None or verbose is None:
+        default_threads = max(1, (os.cpu_count() or 4))
+        default_verbose = False if verbose is None else bool(verbose)
+        num_threads, verbose = ask_for_settings_cli(default_threads, default_verbose)
 
     if verbose:
         logger.setLevel(logging.DEBUG)
@@ -324,8 +375,7 @@ def main(input_csv=None, num_threads=4, verbose=False):
                     
                     row, final_permutations, row_lcas, input_pep_lca = result
                     
-                    logger.debug(f"Processing row: {row['Sequence']}")
-
+                    logger.debug(f"Processing row: {row.get('Sequence') or row.get('pep_seq')}")
                     sequence_col = (row.get('Sequence') or row.get('pep_seq') or '').strip()
                     modifications_col = (row.get('Modifications') or row.get('pep_var_mod') or '').strip()
                     lca_options = []
@@ -377,11 +427,10 @@ def main(input_csv=None, num_threads=4, verbose=False):
     elapsed = time.time() - start_time
     logger.debug(f"Script completed in {elapsed:.2f} seconds using {num_threads} threads.")
 
-# Command-line interface: handles argument parsing
+# Command-line interface: only the INPUT CSV is optional.
+# Number of processors and verbose mode are asked interactively in the terminal
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process peptides from a CSV file.")
     parser.add_argument("input_csv", help="Input CSV file containing peptide sequences", nargs="?", default=None)
-    parser.add_argument("--num-processors", type=int, default=4, help="Number of threads to use for processing")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose debug output")
     args = parser.parse_args()
-    main(args.input_csv, args.num_processors, args.verbose)
+    main(args.input_csv, num_threads=None, verbose=None)
