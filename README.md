@@ -3,7 +3,7 @@
 
 **The Demodifier** is a tool for processing peptide sequences to detect **Modification-Induced Sequence Permutations (MISPs)** caused by deamidation and N-terminal pyroglutamic acid (pyro-Glu) formation (Evans 2025). It automates the detection of peptides that may potentially be derived from multiple distinct taxonomies by generating all possible MISPs and retrieving their **Lowest Common Ancestor (LCA)** via the **Unipept API**. 
 
-<img src="images/graphic_abstract.png" alt="Demodifier Figure" width="500" />
+<img src="images/graphic_abstract.png" alt="Demodifier Figure" width="700" />
 
 ## What It Does
 
@@ -66,9 +66,9 @@ Located in the realeases section on the side bar
 3) **Double click the executable**:
    This may trigger ththe pop up below, click *More info* and then *run anyway*
 
-   <img src="images/windows_protected_PC.png" alt="Demodifier Figure" width="300" />
+   <img src="images/windows_protected_PC.png" alt="Demodifier Figure" width="500" />
 
-   <img src="images/run_anyway.png" alt="Demodifier Figure" width="300" />
+   <img src="images/run_anyway.png" alt="Demodifier Figure" width="500" />
 
    this will open the command line, and a popup box for file selection
 
