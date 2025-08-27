@@ -3,7 +3,7 @@
 
 **The Demodifier** is a tool for processing peptide sequences to detect **Modification-Induced Sequence Permutations (MISPs)** caused by deamidation and N-terminal pyroglutamic acid (pyro-Glu) formation (Evans 2025). It automates the detection of peptides that may potentially be derived from multiple distinct taxonomies by generating all possible MISPs and retrieving their **Lowest Common Ancestor (LCA)** via the **Unipept API**. 
 
-<img src="images/demodifier_simple_fig.png" alt="Demodifier Figure" width="300" />
+<img src="images/graphic_abstract.png" alt="Demodifier Figure" width="500" />
 
 ## What It Does
 
@@ -52,7 +52,68 @@ The Demodifier produces the following files:
 
 ## How to Use
 
-### Installation
+### Easiest method: Executable
+
+The easiest way to run **The Demodifier** is as an executable. The executable has the correct Python versions and dependancies built in and requires minimal knowledge of the command line.
+
+### Instructions for Windows:
+
+1) **Download the windows exucutable zip folder, in the realeases section on the side bar**
+
+2) **Unzip the folder**
+
+3) **Double click the executable**:
+   This may trigger ththe pop up below, click *More info* and then *run anyway*
+
+   <img src="images/windows_protected_PC.png" alt="Demodifier Figure" width="300" />
+
+   <img src="images/run_anyway.png" alt="Demodifier Figure" width="300" />
+
+   this will open the command line, and a popup box for file selection
+
+4) **Select your input file** in the pop up box
+
+   <img src="images/popup_window.png" alt="Popup File Selection"/>
+
+5) **Specify number of processors**
+   On the command line, you will be asked:
+   "How many processors?"
+
+   Type the number of processors desired and press enter. 
+   E.g. "4"
+
+6) **Specify if Verbose mode is desired**
+   On the command line, you will be asked:
+   "Verbose mode on?"
+   Type either "no"/"n" (recommended) or "yes/y"
+
+   Note, verbose mode is extremly verbose so is not recommended for large sample sizes.
+
+7) **Wait for analysis to finish**
+   The command line will close when analysis in complete. 
+   Files will be located in the directory in which the input file is saved.
+
+### Instructions for Linux
+
+1) **Download the source file**:
+   ***INSERT***
+
+2) **Navigate to dist folder**:
+
+```bash
+   cd ~/Demodifier/dist
+```
+
+3) **Run the executable**
+
+```bash
+   ./demodifier
+```
+4) all other steps are the same as windows execution, outlined above
+
+### Alternate method: Command line
+
+#### Installation
 
 1. **Clone the repository**:
    ```bash
@@ -65,19 +126,19 @@ The Demodifier produces the following files:
    pip install -r requirements.txt
    ```
 
-### Running the Script
+#### Running the Script
 
 To run the script:
 
 ```bash
-python3 demodifier.py input_peptides.csv --num-processors 4
+python3 demodifier.py input_peptides.csv
 ```
 
-- **`input_peptides.csv`**: The input CSV file containing peptide sequences and modifications.
-- **`--num-processors`**: (Optional) The number of threads to use for parallel processing (default is 4).
-- **`--verbose`**: (Optional) Additional verbosity for debugging.
+- **`input_peptides.csv`** (optional): The input CSV file containing peptide sequences and modifications.
 
-## Minimal Tutorial Using `example.csv`
+If no file is specified, a pop up box will appear from which the input file can be selected.
+
+## Minimal Command line Tutorial Using `example.csv`
 
 To quickly try out **The Demodifier**, you can use the provided `example.csv` file, which is located in the root of the repository.
 
@@ -96,8 +157,20 @@ To quickly try out **The Demodifier**, you can use the provided `example.csv` fi
 
 3. **Run the script with the `example.csv` file**:
    ```bash
-   python3 demodifier.py example.csv --num-processors 4
+   python3 demodifier.py example.csv
    ```
+4. **Respond to dialogues**:
+
+"Number of processors?"
+```bash
+4
+```
+"Number of processors?"
+
+```bash
+no
+```
+5. **Wait for scrpt to execute**:
 
    This will process the peptides in `example.csv` and output the following files:
    - **`example_results.csv`**: Summary of permutations and LCAs.
@@ -129,12 +202,4 @@ Please cite the following papers if you use **The Demodifier** in your research:
 ## License
 
 This tool is open-source and licensed under the MIT License.
-
-### Folder Structure
-```
-├── demodifier.py
-├── requirements.txt
-├── example.csv
-└── README.md
-```
 
