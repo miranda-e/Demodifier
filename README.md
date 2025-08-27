@@ -58,7 +58,8 @@ The easiest way to run **The Demodifier** is as an executable. The executable ha
 
 ### Instructions for Windows:
 
-1) **Download the windows exucutable zip folder, in the realeases section on the side bar**
+1) **Download the windows exucutable zip folder**: 
+Located in the realeases section on the side bar
 
 2) **Unzip the folder**
 
@@ -95,13 +96,16 @@ The easiest way to run **The Demodifier** is as an executable. The executable ha
 
 ### Instructions for Linux
 
-1) **Download the source file**:
-   ***INSERT***
+1) **Download the windows exucutable zip folder**: 
+Located in the realeases section on the side bar
 
-2) **Navigate to dist folder**:
+2) **Unzip the folder**
+
+
+2) **Navigate to folder in which the executable is located**:
 
 ```bash
-   cd ~/Demodifier/dist
+   cd ~/Demodifier/linux_exe
 ```
 
 3) **Run the executable**
