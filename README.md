@@ -96,7 +96,7 @@ Located in the realeases section on the side bar
 
 ### Instructions for Linux
 
-1) **Download the windows exucutable zip folder**: 
+1) **Download the linux exucutable zip folder**: 
 Located in the realeases section on the side bar
 
 2) **Unzip the folder**
