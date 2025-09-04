@@ -169,7 +169,7 @@ To quickly try out **The Demodifier**, you can use the provided `example.csv` fi
 ```bash
 4
 ```
-"Number of processors?"
+"Verbose mode on?"
 
 ```bash
 no
