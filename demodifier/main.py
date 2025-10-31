@@ -9,7 +9,9 @@
 #   • If you pass an input path: no GUI dialog is used.
 #   • If you don't pass a path: we try to open a file dialog.
 #   • If the dialog isn't available (headless) or is canceled: we print guidance and exit.
-#   • --threads / --verbose flags override interactive prompts; if omitted, we still prompt.
+#   • --threads / --verbose [yes|no] override prompts.
+#   • If --threads is omitted, you will be PROMPTED for a value.
+#   • If --verbose is omitted, you will be PROMPTED (bare --verbose = yes).
 # ---------------------------------------------------------
 
 import argparse
@@ -17,6 +19,7 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+from typing import Optional  # Python 3.9-compatible Optional typing
 
 from .analysis import (
     extract_deamidation_count,
@@ -27,15 +30,17 @@ from .analysis import (
 from .unipept_api import process_peptides, get_lcas_for_permutations, make_session
 from .io_utils import ask_for_csv_file, read_input_rows
 from .writers import write_results
-from .settings import logger, ask_for_settings_cli, setup_logging
+from .settings import logger, setup_logging
 
 # Per-thread HTTP session (each worker keeps its own keep-alive pool)
 _thread_local = threading.local()
+
 
 def _get_thread_session():
     if not hasattr(_thread_local, "session"):
         _thread_local.session = make_session()
     return _thread_local.session
+
 
 def process_row(row):
     """
@@ -102,12 +107,30 @@ def run_pipeline(input_csv: str, num_threads: int):
     return results
 
 
+# --- Helpers for argparse ---
+
+def _parse_bool(value: Optional[str]) -> bool:
+    """
+    Parse yes/no (and common variants) into a bool.
+    Bare --verbose passes None here → treat as True.
+    """
+    if value is None:
+        return True  # bare --verbose means yes
+    v = value.strip().lower()
+    if v in ("1", "true", "t", "y", "yes", "on"):
+        return True
+    if v in ("0", "false", "f", "n", "no", "off"):
+        return False
+    raise argparse.ArgumentTypeError("Expected yes/no (or true/false, 1/0).")
+
+
 def main(input_csv=None, num_threads=None, verbose=None):
     """
     CLI entry.
     - If no path: try a GUI file dialog.
     - If the dialog is unavailable or canceled: print guidance and exit.
-    - If threads/verbose flags not provided: prompt interactively.
+    - If --threads is omitted: prompt “How many processors?”
+    - If --verbose is omitted: prompt “Verbose mode on? (yes/no)” (bare --verbose = yes).
     - Configure logging, run pipeline, write results.
     """
     # 1) Resolve input path
@@ -121,44 +144,33 @@ def main(input_csv=None, num_threads=None, verbose=None):
             "Please run again and provide an input file path, for example:\n"
             "    demodifier your_input.csv\n"
             "Optionally add flags, e.g.:\n"
-            "    demodifier your_input.csv --threads 8 --verbose"
+            "    demodifier your_input.csv --threads 8 --verbose yes"
         )
         return
 
-    # 2) Resolve execution settings (prompt only for missing values)
-    if num_threads is None and verbose is None:
-        default_threads = max(1, (os.cpu_count() or 4))
-        # Old behavior: ask both if neither provided
-        num_threads, verbose = ask_for_settings_cli(default_threads, False)
-    else:
-        if num_threads is None:
-            # Ask ONLY for processors
-            while True:
-                try:
-                    print("How many processors?")
-                    raw = input().strip()
-                    num_threads = int(raw)
-                    if num_threads < 1:
-                        raise ValueError
-                    break
-                except Exception:
-                    print("Please enter a whole number ≥ 1.")
+    # 2) Resolve execution settings (PROMPT when flags not provided)
+    if num_threads is None:
+        while True:
+            try:
+                raw = input("How many processors?\n").strip()
+                num_threads = int(raw)
+                if num_threads < 1:
+                    raise ValueError
+                break
+            except Exception:
+                print("Please enter a whole number ≥ 1.")
 
-        if verbose is None:
-            # Ask ONLY for verbose mode
-            while True:
-                print("Verbose mode on?")
-                raw = input().strip().lower()
-                if raw in {"y", "yes"}:
-                    verbose = True
-                    break
-                if raw in {"n", "no"}:
-                    verbose = False
-                    break
-                if raw == "":
-                    verbose = False  # default if user just hits Enter
-                    break
-                print("Please answer yes or no.")
+    if verbose is None:
+        # Ask only if not provided via --verbose
+        while True:
+            raw = input("Verbose mode on? (yes/no)\n").strip().lower()
+            if raw in {"y", "yes"}:
+                verbose = True
+                break
+            if raw in {"n", "no"}:
+                verbose = False
+                break
+            print("Please answer yes or no.")
 
     # 3) Configure logging
     setup_logging(verbose)
@@ -177,17 +189,26 @@ def main(input_csv=None, num_threads=None, verbose=None):
 
 
 # --- Command-line interface ---
-# Adds optional flags that *bypass* interactive prompts when provided.
+# Adds optional flags that let users skip prompts when provided.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process peptides from a CSV/TSV file.")
     parser.add_argument("input_csv", nargs="?", default=None, help="Path to input CSV/TSV file")
-    parser.add_argument("--threads", type=int, help="Number of worker threads (overrides prompt)")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging (overrides prompt)")
+    parser.add_argument("--threads", type=int, help="Number of worker threads (skip prompt)")
+    parser.add_argument(
+        "--verbose",
+        nargs="?",
+        const=None,                # bare --verbose → None → _parse_bool returns True
+        type=_parse_bool,          # maps yes/no (and variants) → bool
+        help="Enable or disable verbose logging (yes/no). Bare --verbose = yes.",
+    )
     args = parser.parse_args()
 
-    # Pass flags through; if omitted, keep None so main() will prompt.
-    main(
+    # Handle bare --verbose (no argument)
+if args.verbose is None and any(arg == "--verbose" for arg in os.sys.argv):
+    args.verbose = True
+
+main(
     input_csv=args.input_csv,
     num_threads=args.threads if args.threads is not None else None,
     verbose=args.verbose,
-    )
+)
