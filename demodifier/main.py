@@ -41,7 +41,6 @@ def _get_thread_session():
         _thread_local.session = make_session()
     return _thread_local.session
 
-
 def process_row(row):
     """
     Process one input row:
@@ -187,9 +186,8 @@ def main(input_csv=None, num_threads=None, verbose=None):
     logger.debug(f"Completed in {elapsed:.2f} seconds with {num_threads} threads.")
     print("\nDemodifier completed")
 
-
 # --- Command-line interface ---
-# Adds optional flags that let users skip prompts when provided.
+# Adds optional flags that allow users to skip prompts when flags are provided.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process peptides from a CSV/TSV file.")
     parser.add_argument("input_csv", nargs="?", default=None, help="Path to input CSV/TSV file")
