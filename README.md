@@ -51,7 +51,6 @@ A CSV file that begins with several rows of metadata before the actual table.
 - That table must contain **pep_seq** and **pep_var_mod** (or their recognised alternates, e.g. `Sequence` / `Modifications`).
 - All preamble rows are automatically skipped.
 
-
 ## Output
 
 The Demodifier produces three output files (saved in the same directory as your input file):
@@ -106,7 +105,6 @@ Located in the releases section on the side bar
    Type the number of processors desired and press enter. 
    E.g. "4"
 
-
 6) **Wait for analysis to finish**
 
 The command line will display “Demodifier completed” when the analysis finishes.
@@ -119,7 +117,6 @@ Output files will be located in the same directory as your input file.
 Located in the realeases section on the side bar
 
 2) **Unzip the folder**
-
 
 2) **On the command line, navigate to folder in which the executable is located**:
 
