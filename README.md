@@ -146,7 +146,6 @@ chmod +x demodifier
    git clone https://github.com/miranda-e/Demodifier
    cd Demodifier
 ```
-
 2. **Install the required dependencies**:
 ```bash
    pip install -r requirements.txt
@@ -206,13 +205,18 @@ python -m demodifier.main [input_file] [--threads N] [--verbose [yes|no]]
 |--------------|----------------------------------------------------------------------|------------------------|
 | `input_file` | *Optional:* Path to the input CSV or TXT file                        | `example.csv`          |
 | `--threads`  | Number of processor threads to use. If omitted, you will be prompted | `--threads 4`          |
-| `--verbose`  | Enables or disables detailed logging. Accepts `yes` or `no`. Bare `--verbose` = `yes` | `--verbose no` or `--verbose` |
+| `--verbose`  | Enables or disables detailed logging. Accepts `yes` or `no`. Bare `--verbose` = `yes`. **If using the bare flag, place it *after* the input file.** | `--verbose yes` or `--verbose` |
 
 **Behavior:**
 - If `--threads` is omitted → you’ll be asked **“How many processors?”**
 - If `--verbose` is omitted → you’ll be asked **“Verbose mode on? (yes/no)”**
 - If both are provided, the script won’t prompt and will respect your inputs.
 - If no file is provided, a file picker will open first.
+
+> **Important:**  
+> When using the bare `--verbose` flag (without “yes” or “no”), the input file must come first — for example:  
+> `python -m demodifier.main example.csv --verbose`  
+> If you instead run `--verbose example.csv`, the program may think `example.csv` is the value for `--verbose` and open the file picker.
 
 ## Minimal Command Line Demo (using `example.csv`)
 
@@ -251,7 +255,6 @@ EVLNENLLR,Deamidated (NQ)
 
 This file contains several peptide sequences some of which have **deamidation** and **pyro-Glu** modifications. After running the script, you’ll find the output in the corresponding `.csv` and `.json` files mentioned above.
 
-
 ### Directory structure:
 ```
 demodifier/
@@ -270,9 +273,9 @@ demodifier/
 
 Please cite the following works if you use **The Demodifier**:
 
-1. **Evans (2025)**: "The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics". Preprint: [https://www.biorxiv.org/content/10.1101/2025.01.09.632126v2](https://www.biorxiv.org/content/10.1101/2025.01.09.632126v2)
-2. **Mesuere et al. (2016)**: "Unipept web services for metaproteomics analysis". *Bioinformatics*, Volume 32, Issue 11, Pages 1746–1748: [https://doi.org/10.1093/bioinformatics/btw039](https://doi.org/10.1093/bioinformatics/btw039)
-3. **Vande Moortele et al. (2024)**: "Unipept in 2024: Expanding Metaproteomics Analysis with Support for Missed Cleavages, Semi-Tryptic and Non-Tryptic Peptides". *bioRxiv* 2024.09.26.615136: [https://doi.org/10.1101/2024.09.26.615136](https://doi.org/10.1101/2024.09.26.615136)
+1. **Evans (2025)**: "The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics". Preprint: https://www.biorxiv.org/content/10.1101/2025.01.09.632126v2
+2. **Mesuere et al. (2016)**: "Unipept web services for metaproteomics analysis". *Bioinformatics*, Volume 32, Issue 11, Pages 1746–1748: https://doi.org/10.1093/bioinformatics/btw039
+3. **Vande Moortele et al. (2024)**: "Unipept in 2024: Expanding Metaproteomics Analysis with Support for Missed Cleavages, Semi-Tryptic and Non-Tryptic Peptides". *bioRxiv* 2024.09.26.615136: https://doi.org/10.1101/2024.09.26.615136
 
 ## License
 
