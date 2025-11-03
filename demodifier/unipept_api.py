@@ -12,6 +12,7 @@ from urllib3.util.retry import Retry
 # Configure module logger (level/handlers managed by settings.setup_logging)
 logger = logging.getLogger(__name__)
 
+# Retry failed HTTP requests up to 3 times with exponential backoff
 # Shared retry configuration for all sessions
 retries = Retry(
     total=3,
@@ -23,7 +24,14 @@ retries = Retry(
 def make_session():
     """
     Create a fresh requests.Session with the standard retry policy.
-    Use one per worker thread to avoid cross-thread sharing.
+
+    Each worker thread should use its own session to avoid cross-thread
+    reuse of network connections.
+
+    Returns
+    -------
+    requests.Session
+        A new session object configured with retry logic.
     """
     s = requests.Session()
     s.mount("https://", HTTPAdapter(max_retries=retries))
@@ -33,7 +41,19 @@ def make_session():
 def process_peptides(peptides, session):
     """
     Query the Unipept pept2lca endpoint for a list of peptides.
-    Returns a list of LCAs aligned to the input peptide order.
+
+    Parameters
+    ----------
+    peptides : list of str
+        Peptide sequences to query.
+    session : requests.Session
+        Session object used for API requests.
+
+    Returns
+    -------
+    list of str
+        LCAs (lowest common ancestors) aligned to the input peptide order.
+        If the request fails, returns a list of "no response" entries.
     """
     url = "https://api.unipept.ugent.be/api/v1/pept2lca"
     params = {"input[]": peptides, "equate_il": "true"}
@@ -58,7 +78,19 @@ def process_peptides(peptides, session):
 def get_lcas_for_permutations(permutations, session):
     """
     Look up LCAs for a list of peptide variants in chunks of 100.
-    Returns results aligned to the input permutation order.
+
+    Parameters
+    ----------
+    permutations : list of str
+        Peptide variants to query in batches.
+    session : requests.Session
+        Session object used for API requests.
+
+    Returns
+    -------
+    list of str
+        LCAs corresponding to each input permutation, maintaining order.
+        Returns "no match" for any failed lookups.
     """
     chunk_size = 100
     lca_map = {}

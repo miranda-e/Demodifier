@@ -1,6 +1,6 @@
 # __init__.py
 # ---------------------------------------------------------
-# The Demodifier generates peptide sequences and simulates potential sequence modifications (caused by deamidation, reamidation, pyroglu)
+# The Demodifier simulates potential sequence modifications (caused by deamidation and pyroglu formation)
 # to generate all possible Modification Induced Sequence Permutations (MISPs).
 # The script then sends each MISP to the Unipept API to retrieve its lowest Common Ancestor (LCA).
 # Finally, it outputs a results CSV, containing all MISPs and their LCAs,

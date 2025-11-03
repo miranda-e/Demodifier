@@ -1,12 +1,16 @@
 # analysis.py
 # ---------------------------------------------------------
-# The Demodifier generates peptide sequences and simulates potential sequence modifications (caused by deamidation, reamidation, pyroglu)
+# The Demodifier simulates potential sequence modifications (caused by deamidation and pyroglu formation)
 # to generate all possible Modification Induced Sequence Permutations (MISPs).
-# The script then sends each MISP to the Unipept API to retrieve its lowest Common Ancestor (LCA).
-# Finally, it outputs a results CSV, containing all MISPs and their LCAs,
-# enabling the researcher to assess potentially incorrect peptide taxonomies.
-# If you use this tool, please cite Evans (2025), 
-# The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics
+# Each MISP is then sent to the Unipept API to retrieve its Lowest Common Ancestor (LCA).
+# Finally, it outputs a results CSV containing all MISPs and their LCAs,
+# allowing researchers to assess potentially incorrect peptide taxonomies.
+# If you use this tool, please cite:
+# Evans (2025), The Demodifier: a tool for screening modification-induced
+# alternate peptide taxonomy in palaeoproteomics
+
+# ---------------------------------------------------------
+# All functions in analysis.py are pure analysis logic (they don’t open files, print, or connect to the internet)
 # ---------------------------------------------------------
 
 import re
@@ -15,17 +19,21 @@ from itertools import combinations
 
 # Configure module logger (level/handlers managed by settings.setup_logging)
 logger = logging.getLogger(__name__)
-
-# Counts how many deamidation events are listed in the Modifications column
+# ---------------------------------------------------------
+# # Extracts the number of deamidation events listed in the Modifications column
 # Example: "2 Deamidated (NQ)" → returns 2
+# ---------------------------------------------------------
 def extract_deamidation_count(modifications):
     if not modifications:
         return 0
     matches = re.findall(r'(?:(\d+)\s*)?(Deamidated|Deamidation)\s*\(NQ\)', modifications, re.IGNORECASE)
     return sum(int(num) if num else 1 for num, _ in matches)
 
+# ---------------------------------------------------------
 # Count how many residues in the sequence can be deamidated (i.e. number of N or Q in peptide)
-# Accounts for pyro-Glu shortening the sequence (i.e. ignore N-term Q or E if pyro-Glu mod was detected)
+# If pyro-Glu is present and the peptide starts with Q/E, ignore that first residue when counting
+# Returns: int
+# ---------------------------------------------------------
 def count_deamidatable_residues(peptide, modifications):
     if not peptide:
         return 0
@@ -33,8 +41,16 @@ def count_deamidatable_residues(peptide, modifications):
     sequence = peptide[1:] if pyro_glu and peptide[0] in {"Q", "E"} else peptide
     return sum(1 for aa in sequence if aa in {"N", "Q"})
 
-# Decide if we need to care about exact deamidation position
+# ---------------------------------------------------------
+# Decide whether the exact deamidation position matters.
 # (only required if multiple MISPs give different LCAs)
+# Inputs:
+#   modifications (str)
+#   peptide (str)
+#   identical_lcas ('yes'/'no'/'NA')
+# Returns:
+#   'required' or 'not required'
+# ---------------------------------------------------------
 def deamidation_position_required(modifications, peptide, identical_lcas):
     if not peptide:
         return "not required"
@@ -43,19 +59,29 @@ def deamidation_position_required(modifications, peptide, identical_lcas):
         return "not required"
     nq_total = count_deamidatable_residues(peptide, modifications)
     return "required" if num_deamid < nq_total else "not required"
+# ---------------------------------------------------------
+# Generate all possible deamidation-based permutations of the peptide.
+# Substitutes N→D and Q→E in every possible combination up to the
+# maximum number of deamidations detected (max_substitutions).
+# Ignores N-terminal Q or E if pyro-glu modification is detected 
+#by inserting a placeholder amino acid, "X"
+# Returns:
+#   List[Tuple[str, int, List[int]]]
+#       Each tuple contains:
+#         - The permuted peptide sequence
+#         - The number of substitutions made
+#         - The list of modified residue indices (0-based)
 
-# Generate all possible deamidation-based permutations of the peptide
-# in which up to the maximum number of deamidations detected are made (substitute N→D and Q→E)
-# Ignores N-terminal Q or E if pyro-glu modification is detected (by inserting a placeholder amino acid, "X")
+# ---------------------------------------------------------
 def generate_deamidation_permutations(peptide, max_substitutions, modifications, verbose=False):
-    # Ensure modifications is a string, even if it's passed as a boolean
+    # Ensure modifications is a string
     modifications = str(modifications) if modifications else ""
     
     # Check for pyro-Glu modification
     pyro_glu = "pyro" in modifications.lower() if modifications else False
     
     # Pretend that the first residue (Q or E) is a placeholder amino acid 'X' for substitution 
-    # to prevent inaccurate n-term subs (doesn't change actual peptide)
+    # to prevent inaccurate N-term substitutions (doesn't change actual peptide)
     peptide_for_permutation = peptide
     if pyro_glu and peptide[0] in {"Q", "E"}:
         peptide_for_permutation = "X" + peptide[1:]
@@ -95,17 +121,24 @@ def generate_deamidation_permutations(peptide, max_substitutions, modifications,
     logger.debug(f"Generated {len(permutations)} deamidation-induced permutations.")
     return permutations
 
+# ---------------------------------------------------------
 # Generate all reamidated-based permutations by substituting D→N and E→Q,
 # except at positions previously substituted
-# Ignores N-terminal Q or E if pyro-Glu modification is detected (by inserting a placeholder amino acid, "X")
+# Ignores N-terminal Q or E if pyro-Glu modification is detected 
+# by inserting a placeholder amino acid, "X"
+
+# Returns:
+#   List[str]
+#       All reamidated peptide variants, excluding already modified positions.
+# ---------------------------------------------------------
 def generate_reamidation_permutations(peptide, modified_positions, modifications=None, verbose=False):
     modifications = str(modifications) if modifications else ""
 
     # Check for pyro-Glu modification
     pyro_glu = "pyro" in modifications.lower() if modifications else False
 
-    # If pyro-Glu modification is present, treat the first residue (Q or E) as a placeholder ('X') for permutation making
-    # (doesn't alter actual peptide)
+    # # Use 'X' placeholder at N-term if pyro-Glu present (prevents substitution there)
+
     peptide_for_permutation = peptide
     if pyro_glu and peptide[0] in {"Q", "E"}:
         peptide_for_permutation = "X" + peptide[1:]
@@ -137,9 +170,18 @@ def generate_reamidation_permutations(peptide, modified_positions, modifications
 
     return permutations
 
-# Generate pyro-glu based permutations, if pyro-Glu conversions are specified in Modifications column
-# I.e. if Q or E at the start of the sequence and Gln->pyro-Glu or Glu->pyro-Glu detected in search, 
-# then simulate Q→E or E→Q respectively
+# ---------------------------------------------------------
+# Generate pyro-Glu-based permutations if pyro-Glu conversions
+# are specified in the Modifications column.
+# If the original sequence starts with Q/E and a corresponding
+# Gln->pyro-Glu or Glu->pyro-Glu modification is detected, simulate
+# Q→E or E→Q respectively.
+#
+# Adds first-residue Q→E (Gln->pyro-Glu) or E→Q (Glu->pyro-Glu) variants.
+# Uses a set to deduplicate permutations; returns List[str].
+# Only the FIRST residue is replaced (replace(..., 1)).
+# ---------------------------------------------------------
+
 def add_pyro_glu_permutations(peptide_permutations, modifications):
     pyro_permutations = set(peptide_permutations)
     original_peptide = peptide_permutations[0]

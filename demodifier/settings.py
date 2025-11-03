@@ -3,19 +3,14 @@
 # Handles:
 #   - Logging setup for the entire tool
 #   - Command-line user prompts for threads / verbosity
-# ---------------------------------------------------------
 
 import os
 import logging
 
-# ---------------------------------------------------------
-# Create a clean logger (no side effects on import)
-# ---------------------------------------------------------
+# Create a clean logger for the Demodifier tool
 logger = logging.getLogger("demodifier")
 
-# ---------------------------------------------------------
 # Logging configuration
-# ---------------------------------------------------------
 def setup_logging(verbose: bool):
     """
     Configure logging once, without side effects on import.

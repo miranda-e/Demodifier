@@ -6,12 +6,13 @@
 #   3) Delegate all writing to writers.write_results (CSV + JSON).
 #
 # CLI behavior:
-#   • If you pass an input path: no GUI dialog is used.
-#   • If you don't pass a path: we try to open a file dialog.
+#   • If you pass an input path: no GUI dialog is used for file selection.
+#   • If you don't pass a path: we try to open a file GUI dialog.
 #   • If the dialog isn't available (headless) or is canceled: we print guidance and exit.
-#   • --threads / --verbose [yes|no] override prompts.
+#   • --threads / --verbose [yes|no] override prompts. Bare --verbose = yes.
 #   • If --threads is omitted, you will be PROMPTED for a value.
 #   • If --verbose is omitted, you will be PROMPTED (bare --verbose = yes).
+#   • When using bare --verbose, place it after the input file (positional must come first).
 # ---------------------------------------------------------
 
 import argparse
@@ -19,7 +20,6 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-from typing import Optional  # Python 3.9-compatible Optional typing
 
 from .analysis import (
     extract_deamidation_count,
@@ -35,7 +35,7 @@ from .settings import logger, setup_logging
 # Per-thread HTTP session (each worker keeps its own keep-alive pool)
 _thread_local = threading.local()
 
-
+# Each worker thread gets its own HTTP session for stability (avoids cross-thread sharing).
 def _get_thread_session():
     if not hasattr(_thread_local, "session"):
         _thread_local.session = make_session()
@@ -106,23 +106,6 @@ def run_pipeline(input_csv: str, num_threads: int):
     return results
 
 
-# --- Helpers for argparse ---
-
-def _parse_bool(value: Optional[str]) -> bool:
-    """
-    Parse yes/no (and common variants) into a bool.
-    Bare --verbose passes None here → treat as True.
-    """
-    if value is None:
-        return True  # bare --verbose means yes
-    v = value.strip().lower()
-    if v in ("1", "true", "t", "y", "yes", "on"):
-        return True
-    if v in ("0", "false", "f", "n", "no", "off"):
-        return False
-    raise argparse.ArgumentTypeError("Expected yes/no (or true/false, 1/0).")
-
-
 def main(input_csv=None, num_threads=None, verbose=None):
     """
     CLI entry.
@@ -141,7 +124,7 @@ def main(input_csv=None, num_threads=None, verbose=None):
         print(
             "No file selected and GUI picker unavailable.\n"
             "Please run again and provide an input file path, for example:\n"
-            "    demodifier your_input.csv\n"
+            "    python -m demodifier.main\n"
             "Optionally add flags, e.g.:\n"
             "    demodifier your_input.csv --threads 8 --verbose yes"
         )
@@ -187,26 +170,45 @@ def main(input_csv=None, num_threads=None, verbose=None):
     print("\nDemodifier completed")
 
 # --- Command-line interface ---
+# Standard Python entry point — runs when script is executed directly.
 # Adds optional flags that allow users to skip prompts when flags are provided.
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process peptides from a CSV/TSV file.")
     parser.add_argument("input_csv", nargs="?", default=None, help="Path to input CSV/TSV file")
     parser.add_argument("--threads", type=int, help="Number of worker threads (skip prompt)")
+    # Accepts optional value (yes/no). Bare --verbose => True.
+    # Any value not in {1,true,t,y,yes,on} is treated as False; order matters if you use the bare flag.
     parser.add_argument(
         "--verbose",
-        nargs="?",
-        const=None,                # bare --verbose → None → _parse_bool returns True
-        type=_parse_bool,          # maps yes/no (and variants) → bool
-        help="Enable or disable verbose logging (yes/no). Bare --verbose = yes.",
+        nargs="?",              # optional value allowed
+        const=True,             # bare --verbose => True
+        default=None,           # omitted => prompt later
+        type=lambda x: str(x).lower() in ("1", "true", "t", "y", "yes", "on"),
+        help=(
+            "Enable verbose logging (yes/no). Bare --verbose = yes. "
+            "Note: place --verbose after the input file if using the bare flag, e.g. "
+            "'demodifier input.csv --threads 4 --verbose'."
+        ),
     )
     args = parser.parse_args()
 
-    # Handle bare --verbose (no argument)
-if args.verbose is None and any(arg == "--verbose" for arg in os.sys.argv):
-    args.verbose = True
+    # Warn if the arguments look out of order (e.g., '--verbose example.csv ...')
+    argv = os.sys.argv[1:]
+    if args.input_csv is None and "--verbose" in argv:
+        idx = argv.index("--verbose")
+        if idx + 1 < len(argv):
+            next_tok = argv[idx + 1]
+            if not next_tok.startswith("-"):
+                print("\nIt looks like your arguments might be in the wrong order.")
+                print("file path must be first argument.")
+                print("Example of correct usage:")
+                print("    demodifier your_input.csv --verbose yes --threads 4")
+                print("Or:")
+                print("    demodifier your_input.csv --threads 4 --verbose\n")
 
-main(
-    input_csv=args.input_csv,
-    num_threads=args.threads if args.threads is not None else None,
-    verbose=args.verbose,
-)
+    main(
+        input_csv=args.input_csv,
+        num_threads=args.threads if args.threads is not None else None,
+        verbose=args.verbose,
+    )
+
