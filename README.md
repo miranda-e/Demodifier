@@ -127,7 +127,7 @@ Located in the realeases section on the side bar
 3) Make the file executable (if it won’t run yet)
 
 ```bash
-chmod +x demodifier
+   chmod +x demodifier
 ```
 
 4) **Run the executable**
