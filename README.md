@@ -240,14 +240,21 @@ This file contains several peptide sequences, some of which have **deamidation**
 ### Directory structure:
 
 ```
-demodifier/
-├── __init__.py
-├── main.py          # Orchestrates analysis and output
-├── analysis.py      # MISP permutation logic
-├── unipept_api.py   # API interaction and LCA lookup
-├── io_utils.py      # File input, including CSV/TSV readers
-├── writers.py       # Output writers (CSV + JSON)
-└── settings.py      # Logging, session setup, and CLI prompts
+Demodifier/
+├── demodifier/            # Core package
+│   ├── __init__.py
+│   ├── main.py            # Orchestrates analysis and output
+│   ├── analysis.py        # MISP permutation logic
+│   ├── unipept_api.py     # API interaction and LCA lookup
+│   ├── io_utils.py        # File input, including CSV/TSV readers
+│   ├── writers.py         # Output writers (CSV + JSON)
+│   └── settings.py        # Logging, session setup, and CLI prompts
+│
+├── example.csv            # Example input file for quick testing
+├── requirements.txt       # Python dependencies
+├── README.md              # Project documentation
+├── LICENSE                # MIT Licence
+└── images/                # Figures used in the README
 ```
 
 ---
