@@ -55,7 +55,7 @@ def write_results(results, output_csv: str, output_json: str, output_variant_lca
 
         # Write the detailed per-variant CSV
         variant_lca_writer = csv.writer(variantlcafile)
-        variant_lca_writer.writerow(["Sequence", "Modifications", "Variant", "Variant_LCA"])
+        variant_lca_writer.writerow(["Sequence", "Modifications", "Permutation", "Permutation_LCA"])
 
         # Write the summary CSV
         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
