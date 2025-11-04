@@ -21,16 +21,16 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
-from .analysis import (
+from demodifier.analysis import (
     extract_deamidation_count,
     generate_deamidation_permutations,
     generate_reamidation_permutations,
     add_pyro_glu_permutations,
 )
-from .unipept_api import process_peptides, get_lcas_for_permutations, make_session
-from .io_utils import ask_for_csv_file, read_input_rows
-from .writers import write_results
-from .settings import logger, setup_logging
+from demodifier.unipept_api import process_peptides, get_lcas_for_permutations, make_session
+from demodifier.io_utils import ask_for_csv_file, read_input_rows
+from demodifier.writers import write_results
+from demodifier.settings import logger, setup_logging
 
 # Per-thread HTTP session (each worker keeps its own keep-alive pool)
 _thread_local = threading.local()
