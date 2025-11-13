@@ -254,6 +254,11 @@ Demodifier/
 ├── requirements.txt       # Python dependencies
 ├── README.md              # Project documentation
 ├── LICENSE                # MIT Licence
+│
+├── dist/                  # Distribution folder (created by PyInstaller)
+│   ├── DemodifierApp         # Linux executable
+│   └── DemodifierApp.exe     # Windows executable
+│
 └── images/                # Figures used in the README
 ```
 
