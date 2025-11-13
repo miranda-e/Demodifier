@@ -3,7 +3,7 @@ name: Build executables (Windows & Linux)
 on:
   push:
     tags:
-      - "v*.*.*"   # runs when you push a tag like v1.6.0
+      - "v*.*.*"   # runs when tag is pushed
 
 jobs:
   build-windows:
@@ -36,7 +36,7 @@ jobs:
           retention-days: 30
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04       #  older glibc, compatible with my system
     steps:
       - uses: actions/checkout@v4
 
@@ -68,7 +68,7 @@ jobs:
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    environment: production   # this is what will require your approval
+    environment: production   # requires approval in GitHub Environments
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -86,3 +86,4 @@ jobs:
           files: |
             Demodifier_Windows.zip
             Demodifier_Linux.tar.gz
+
