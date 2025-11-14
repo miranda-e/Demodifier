@@ -41,6 +41,7 @@ A tab-separated file with a `.txt` extension.
 
 - Must contain **Sequence** and **Modifications** columns (or any of the alternate column names recognised by the script).
 - Any other columns are ignored.
+- Only deamidation and pyro-Glu are used for permutation generation; other modifications are ignored.
 
 ### 3. A Mascot output file
 
@@ -48,7 +49,8 @@ A CSV file that begins with several rows of metadata before the actual table.
 
 - The true table must begin on the row where the **first column header is `prot_hit_num`**.
 - That table must contain **pep_seq** and **pep_var_mod** (or their recognised alternates, for example `Sequence` / `Modifications`).
-- All preamble rows are automatically skipped.
+- All metadata rows rows are automatically skipped.
+- Only deamidation and pyro-Glu are used for permutation generation; other modifications are ignored.
 
 ## Output
 
@@ -71,6 +73,8 @@ The Demodifier produces three output files (saved in the same directory as your 
 3. **`yourfilename_output.json`** – Detailed JSON output for downstream analysis:
    - Provides nested results of the analysis, including all generated permutations and LCA data for each input peptide.
 
+(where yourfilename is the name of your input file without its extension)
+
 ## How to Use
 
 ### Easiest method: Executable
@@ -78,6 +82,10 @@ The Demodifier produces three output files (saved in the same directory as your 
 The easiest way to run **The Demodifier** is as an executable. The executable has the correct Python versions and dependencies built in and requires minimal knowledge of the command line, particularly on Windows.
 
 ### Instructions for Windows:
+
+**Note for Windows users:**
+The pre-built executable requires Windows 10 or Windows 11.
+An internet connection is also required to access the Unipept API.
 
 1. **Download the Windows executable ZIP folder**: Located in the releases section on the side bar.
 2. **Unzip the folder.**
@@ -104,6 +112,11 @@ The command line will display “Demodifier completed” when the analysis finis
 
 ### Instructions for Linux Executable
 
+**Note**
+The pre-built executable requires GLIBC 2.38 or newer, which is included in Ubuntu 24.04 LTS and later.
+It may not run on older Linux distributions such as Ubuntu 20.04 or 22.04.
+An internet connection is also required to access the Unipept API.
+
 1. **Download the Linux executable tar.gz file**: Located in the releases section on the side bar.
 2. **Extract the file** using:
    ```bash
@@ -113,6 +126,8 @@ The command line will display “Demodifier completed” when the analysis finis
    ```
    DemodifierApp
    ```
+   After extraction, the executable appears in the current directory.
+
 3. **Make the file executable (if it will not run yet):**
    ```bash
    chmod +x DemodifierApp
@@ -195,6 +210,10 @@ python -m demodifier.main [input_file] [--threads N] [--verbose [yes|no]]
 - If both are provided, the script will not prompt and will respect your inputs.
 - If no file is provided, a file picker will open first.
 
+**Example combining all flags:**
+```bash
+python -m demodifier.main example.csv --threads 4 --verbose no
+
 > **Important:**  
 > When using the bare `--verbose` flag (without “yes” or “no”), the input file must come first – for example:  
 > `python -m demodifier.main example.csv --verbose`  
@@ -263,7 +282,7 @@ Demodifier/
 
 Please cite the following works if you use **The Demodifier**:
 
-1. **Evans (2025)**: "The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics". Preprint: https://www.biorxiv.org/content/10.1101/2025.01.09.632126v2
+1. **Evans (2025)**: "The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics". Preprint: https://www.biorxiv.org/content/10.1101/2025.01.09.632126v6
 2. **Mesuere et al. (2016)**: "Unipept web services for metaproteomics analysis". *Bioinformatics*, Volume 32, Issue 11, Pages 1746–1748: https://doi.org/10.1093/bioinformatics/btw039
 3. **Vande Moortele et al. (2024)**: "Unipept in 2024: Expanding Metaproteomics Analysis with Support for Missed Cleavages, Semi-Tryptic and Non-Tryptic Peptides". *bioRxiv* 2024.09.26.615136: https://doi.org/10.1101/2024.09.26.615136
 
