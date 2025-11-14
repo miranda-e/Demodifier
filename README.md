@@ -104,24 +104,24 @@ The command line will display “Demodifier completed” when the analysis finis
 
 ### Instructions for Linux Executable
 
-1. **Download the Linux executable ZIP folder**: Located in the releases section on the side bar.
-2. **Unzip the folder.**
-3. **On the command line, navigate to the folder in which the executable is located:**
-
-```bash
-cd ~/Demodifier/linux_exe
-```
-4. **Make the file executable (if it will not run yet):**
-
-```bash
-chmod +x demodifier
-```
-5. **Run the executable:**
-
-```bash
-./demodifier
-```
-6. All other steps are the same as Windows execution, outlined above.
+1. **Download the Linux executable tar.gz file**: Located in the releases section on the side bar.
+2. **Extract the file** using:
+   ```bash
+   tar -xzf Demodifier_Linux.tar.gz
+   ```
+   This produces:
+   ```
+   DemodifierApp
+   ```
+3. **Make the file executable (if it will not run yet):**
+   ```bash
+   chmod +x DemodifierApp
+   ```
+4. **Run the executable:**
+   ```bash
+   ./DemodifierApp
+   ```
+5. All other steps are the same as Windows execution, outlined above.
 
 ### Alternate method: Command Line
 
@@ -254,11 +254,6 @@ Demodifier/
 ├── requirements.txt       # Python dependencies
 ├── README.md              # Project documentation
 ├── LICENSE                # MIT Licence
-│
-├── dist/                  # Distribution folder (created by PyInstaller)
-│   ├── DemodifierApp         # Linux executable
-│   └── DemodifierApp.exe     # Windows executable
-│
 └── images/                # Figures used in the README
 ```
 
