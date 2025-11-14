@@ -213,6 +213,7 @@ python -m demodifier.main [input_file] [--threads N] [--verbose [yes|no]]
 **Example combining all flags:**
 ```bash
 python -m demodifier.main example.csv --threads 4 --verbose no
+```
 
 > **Important:**  
 > When using the bare `--verbose` flag (without “yes” or “no”), the input file must come first – for example:  
