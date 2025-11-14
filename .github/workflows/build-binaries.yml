@@ -3,7 +3,7 @@ name: Build executables (Windows & Linux)
 on:
   push:
     tags:
-      - "v*.*.*"   # runs when tag is pushed
+      - "v*.*.*"   # runs when you push a tag like v1.6.0
 
 jobs:
   build-windows:
@@ -24,19 +24,15 @@ jobs:
         run: |
           pyinstaller --onefile --name DemodifierApp demodifier/main.py
 
-      - name: Zip artifact
-        run: |
-          powershell Compress-Archive -Path dist/DemodifierApp.exe -DestinationPath Demodifier_Windows.zip
-
-      - name: Upload artifact
+      - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
-          name: windows-zip
-          path: Demodifier_Windows.zip
+          name: windows-binary
+          path: dist/DemodifierApp.exe
           retention-days: 30
 
   build-linux:
-    runs-on: ubuntu-20.04       #  older glibc, compatible with my system
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -53,32 +49,42 @@ jobs:
         run: |
           pyinstaller --onefile --name DemodifierApp demodifier/main.py
 
-      - name: Tar artifact
-        run: |
-          tar -czf Demodifier_Linux.tar.gz -C dist DemodifierApp
-
-      - name: Upload artifact
+      - name: Upload Linux binary
         uses: actions/upload-artifact@v4
         with:
-          name: linux-tar
-          path: Demodifier_Linux.tar.gz
+          name: linux-binary
+          path: dist/DemodifierApp
           retention-days: 30
 
   release:
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    environment: production   # requires approval in GitHub Environments
+    environment: production   # requires your approval
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
         with:
-          name: windows-zip
-          path: .
+          name: windows-binary
+          path: windows
 
-      - uses: actions/download-artifact@v4
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
         with:
-          name: linux-tar
-          path: .
+          name: linux-binary
+          path: linux
+
+      - name: Package release files
+        run: |
+          # Windows ZIP: one level, contains DemodifierApp.exe
+          cp windows/DemodifierApp.exe DemodifierApp.exe
+          zip Demodifier_Windows.zip DemodifierApp.exe
+          rm DemodifierApp.exe
+
+          # Linux tar.gz: one level, contains DemodifierApp
+          cp linux/DemodifierApp DemodifierApp
+          tar -czf Demodifier_Linux.tar.gz DemodifierApp
+          rm DemodifierApp
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
