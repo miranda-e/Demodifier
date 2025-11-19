@@ -99,7 +99,7 @@ An internet connection is also required to access the Unipept API.
 
 4. **Select your input file** in the pop-up box.
 
-   <img src="images/file_selection_window.png" alt="Popup File Selection"/>
+   <img src="images/file_selection_window.png" alt="Popup File Selection" width="700"/>
 
 5. **Specify number of processors.** On the command line, you will be asked:  
    "How many processors?"
@@ -108,7 +108,7 @@ An internet connection is also required to access the Unipept API.
 
 6. **Wait for analysis to finish.**
 
-The command line will display “Demodifier completed” when the analysis finishes. The command line window will close. Output files will be located in the same directory as your input file.
+The command line will display “Demodifier completed” when the analysis finishes. The command line window will close. **Output files will be located in the same directory as your input file.**
 
 ### Instructions for Linux Executable
 
@@ -255,7 +255,7 @@ AAVEQLTEEQKNEFK,Deamidated (NQ)
 EVLNENLLR,Deamidated (NQ)
 ```
 
-This file contains several peptide sequences, some of which have **deamidation** and **pyro-Glu** modifications. After running the script, you will find the output in the corresponding `.csv` and `.json` files mentioned above.
+This file contains several peptide sequences, some of which have **deamidation** and **pyro-Glu** modifications. After running the script, you will find the output in the corresponding `.csv` and `.json` files mentioned above in the same directory as the input file.
 
 ### Directory structure:
 
