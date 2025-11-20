@@ -4,6 +4,26 @@
 
 <img src="images/graphic_abstract.png" alt="Demodifier Figure" width="700" />
 
+## Table of Contents
+
+1. [What It Does](#what-it-does)
+2. [Input](#input)
+   - [Simple CSV](#1-simple-csv)
+   - [MaxQuant Evidence File](#2-a-maxquant-evidence-file)
+   - [Mascot Output File](#3-a-mascot-output-file)
+3. [Output](#output)
+4. [How to Use](#how-to-use)
+   - [Windows Executable](#instructions-for-windows)
+   - [Linux Executable](#instructions-for-linux-executable)
+   - [Command Line (Source Code)](#alternate-method-command-line)
+     - [Installation](#installation)
+     - [Running the Script](#running-the-script)
+     - [Optional Command-Line Flags](#optional-command-line-flags)
+5. [Minimal Command Line Demo](#minimal-command-line-demo-using-examplecsv)
+6. [Directory Structure](#directory-structure)
+7. [Citation](#citation)
+8. [Licence](#licence)
+
 ## What It Does
 
 **The Demodifier** performs the following tasks:
@@ -49,7 +69,7 @@ A CSV file that begins with several rows of metadata before the actual table.
 
 - The true table must begin on the row where the **first column header is `prot_hit_num`**.
 - That table must contain **pep_seq** and **pep_var_mod** (or their recognised alternates, for example `Sequence` / `Modifications`).
-- All metadata rows rows are automatically skipped.
+- All metadata rows are automatically skipped.
 - Only deamidation and pyro-Glu are used for permutation generation; other modifications are ignored.
 
 ## Output
@@ -73,15 +93,16 @@ The Demodifier produces three output files (saved in the same directory as your 
 3. **`yourfilename_output.json`** – Detailed JSON output for downstream analysis:
    - Provides nested results of the analysis, including all generated permutations and LCA data for each input peptide.
 
-(where yourfilename is the name of your input file without its extension)
+_(where yourfilename is the name of your input file without its extension)_
 
 ## How to Use
 
-### Easiest method: Executable
+The Demodifier can be run either as an executable on Windows or Linux, or directly from source code on the command line.
 
-The easiest way to run **The Demodifier** is as an executable. The executable has the correct Python versions and dependencies built in and requires minimal knowledge of the command line, particularly on Windows.
+The easiest way to run The Demodifier is by using the Windows executable, which includes all required dependencies and can be run without command-line knowledge.
+A Linux executable is also provided, but it requires basic familiarity with the command line (extracting files, setting permissions, and running from a terminal).
 
-### Instructions for Windows:
+### Instructions for Windows Executable:
 
 **Note for Windows users:**
 The pre-built executable requires Windows 10 or Windows 11.
@@ -110,12 +131,12 @@ An internet connection is also required to access the Unipept API.
 
 The command line will display “Demodifier completed” when the analysis finishes. The command line window will close. **Output files will be located in the same directory as your input file.**
 
-### Instructions for Linux Executable
+### Instructions for Linux Executable:
 
 **Note**
-The pre-built executable requires GLIBC 2.38 or newer, which is included in Ubuntu 24.04 LTS and later.
-It may not run on older Linux distributions such as Ubuntu 20.04 or 22.04.
-An internet connection is also required to access the Unipept API.
+The Linux executable requires GLIBC 2.38 or newer, included in Ubuntu 24.04 LTS and later.
+It will not run on older distributions such as Ubuntu 20.04 or 22.04.
+An internet connection is required to access the Unipept API.
 
 1. **Download the Linux executable tar.gz file**: Located in the releases section on the side bar.
 2. **Extract the file** using:
