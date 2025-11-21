@@ -89,7 +89,7 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
           files: |
             Demodifier_Windows.zip
             Demodifier_Linux.tar.gz
-
