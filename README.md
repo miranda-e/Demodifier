@@ -304,9 +304,9 @@ Demodifier/
 
 Please cite the following works if you use **The Demodifier**:
 
-1. **Evans (2025)**: "The Demodifier: a tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics". Preprint: https://www.biorxiv.org/content/10.1101/2025.01.09.632126v6
-2. **Mesuere et al. (2016)**: "Unipept web services for metaproteomics analysis". *Bioinformatics*, Volume 32, Issue 11, Pages 1746–1748: https://doi.org/10.1093/bioinformatics/btw039
-3. **Vande Moortele et al. (2024)**: "Unipept in 2024: Expanding Metaproteomics Analysis with Support for Missed Cleavages, Semi-Tryptic and Non-Tryptic Peptides". *bioRxiv* 2024.09.26.615136: https://doi.org/10.1101/2024.09.26.615136
+1. **Evans (2026)**: The Demodifier: A tool for screening modification-induced alternate peptide taxonomy in palaeoproteomics. *PLOS ONE*, 21(1): e0339465. https://doi.org/10.1371/journal.pone.0339465
+2. **Mesuere et al. (2016)**: Unipept web services for metaproteomics analysis. *Bioinformatics*, 32(11), Pages 1746–1748: https://doi.org/10.1093/bioinformatics/btw039
+3. **Vande Moortele et al. (2024)**: "Unipept in 2024: Expanding Metaproteomics Analysis with Support for Missed Cleavages and Semitryptic and Nontryptic Peptides". *Journal of Proteome Research* 24(2): https://doi.org/10.1021/acs.jproteome.4c00848 
 
 ## Licence
 
